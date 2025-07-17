@@ -18,19 +18,7 @@ GalleryNest is a high-resolution client gallery platform for professional photog
 - Firebase Hosting
 - Responsive & mobile-friendly UI
 
-## 🚀 Getting Started
-
-1. Clone the repo  
-   `git clone https://github.com/ArisenLight/GalleryNest.git`
-
-2. Navigate to the project directory  
-   `cd GalleryNest`
-
-3. Customize your Firebase config in `dashboard.js`, `login.js`, and `signup.js`
-
-4. Deploy using Firebase Hosting:  
-   `firebase deploy`
-
 ## 📄 License
 
-This project is open source and free to use for learning or launching your own version.
+This project is owned by [SyntaxCore](https://syntaxcorestudio.com) and is not open source.  
+All rights reserved. Commercial use, distribution, or duplication without permission is prohibited.

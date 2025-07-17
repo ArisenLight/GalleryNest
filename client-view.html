@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gallery | GalleryNest</title>
+  <link rel="stylesheet" href="public/css/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="navbar">
+    <h1 class="logo">GalleryNest</h1>
+    <p class="powered-by">Shared by your photographer</p>
+  </header>
+
+  <main class="client-gallery-container">
+    <h2 class="client-title">Client Gallery</h2>
+    <div id="gallery" class="gallery-grid">
+      <p class="loading-msg">Loading images...</p>
+    </div>
+  </main>
+
+  <!-- Global Custom Modal -->
+<div id="customAlertModal" class="modal">
+  <div class="modal-content">
+    <p id="customAlertMessage">Alert message goes here.</p>
+    <button id="customAlertCloseBtn">Okay</button>
+  </div>
+</div>
+
+  <script type="module" src="public/js/client-view.js"></script>
+  <script type="module" src="public\js\utils.js"></script>
+</body>
+</html>

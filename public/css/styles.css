@@ -80,6 +80,8 @@ body {
   display: none;
 }
 
+
+
 .folder-info {
   display: flex;
   align-items: center;
@@ -87,6 +89,7 @@ body {
   font-size: 18px;
   color: #333;
   margin-bottom: 10px;
+  flex-grow: 1;
 }
 
 .folder-info i {
@@ -100,21 +103,39 @@ body {
   color: #333;
 }
 
-.share-btn {
-  background-color: #6b5bff;
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
-  margin-left: auto;
+.folder-actions {
+  display: flex;
+  flex-wrap: nowrap; /* Prevents wrapping */
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
-.share-btn:hover {
-  background-color: #5844e3;
+.folder-actions button {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  height: 36px;
+  background-color: #ff6f61;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  transition: background-color 0.3s ease;
 }
+
+.folder-actions button i {
+  margin-right: 6px;
+}
+
+.folder-actions button:hover {
+  background-color: #ff7d70;
+}
+
+
 
 /* Reset Modal */
 .modal {
@@ -125,7 +146,7 @@ body {
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(13, 15, 20, 0.6); /* dark overlay */
+  background-color: rgba(13, 15, 20, 0.6);
   justify-content: center;
   align-items: center;
   backdrop-filter: blur(4px);
@@ -175,16 +196,13 @@ body {
   }
 }
 
-
-
 /* Navbar */
 .navbar {
   padding: 20px 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  background: linear-gradient(to right, #5A55EA, #C3BFFF);
   flex-wrap: wrap;
 }
 
@@ -226,6 +244,31 @@ body {
   margin: 0 auto 32px;
 }
 
+.cta-button {
+  background: #ff6f61;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.cta-button:hover {
+  background-color: #ff857a;
+  transform: translateY(-2px);
+  color: #fff;
+}
+
+.cta-button:disabled {
+  background-color: #888;
+  cursor: not-allowed;
+  color: #ddd;
+}
+
+
 .cta-buttons a {
   text-decoration: none;
   padding: 14px 28px;
@@ -233,6 +276,14 @@ body {
   border-radius: 8px;
   font-weight: 600;
   transition: background 0.3s ease;
+}
+
+
+.shared-image {
+  max-width: 250px;
+  margin: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
 .btn-primary {
@@ -538,10 +589,12 @@ body {
 
 .folder-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   flex-wrap: wrap;
+  gap: 10px;
 }
+
 
 .folder-images {
   display: flex !important;
@@ -638,21 +691,6 @@ body {
   text-overflow: ellipsis;
 }
 
-.gallery-folder .share-btn {
-  background-color: #6b5bff;
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.gallery-folder .share-btn:hover {
-  background-color: #5846d6;
-}
 
 
 /* Fix: Only apply to standalone gallery layout */
@@ -791,6 +829,7 @@ body {
 }
 
 .client-title {
+  color: #5846d6;
   font-size: 2rem;
   margin-bottom: 2rem;
 }
@@ -812,23 +851,223 @@ body {
   transform: scale(1.02);
 }
 
+/* ========== Pricing Section ========== */
+.pricing {
+  padding: 80px 20px;
+  background: linear-gradient(to right, #5A55EA, #C3BFFF);
+  text-align: center;
+}
+
+.pricing h2 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  color: #5A55EA;
+}
+
+.pricing p {
+  font-size: 1rem;
+  color: #ccc;
+}
+
+.pricing-tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 30px;
+  margin-top: 40px;
+}
+
+.tier {
+  background: #1f232a;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tier:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+}
+
+.tier h3 {
+  color: #fff;
+  margin-bottom: 10px;
+  font-size: 1.4rem;
+}
+
+.tier .price {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #5A55EA;
+  margin-bottom: 20px;
+}
+
+.tier ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 25px;
+  color: #bbb;
+}
+
+.tier ul li {
+  margin-bottom: 10px;
+}
+
+.tier .cta-button {
+  background-color: #5A55EA;
+  color: #0d0f14;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.tier .cta-button:hover {
+  background-color: #ff857a;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+/* Override Share Button Styling */
+.share-btn {
+  background-color: #00b894 !important;
+  color: white !important;
+  border: none;
+  font-weight: 600;
+}
+
+.share-btn:hover {
+  background-color: #009872 !important;
+}
 
 
-/* Responsive */
+
+/* ========== MOBILE RESPONSIVE STYLES ========== */
 @media (max-width: 768px) {
-  .hero h2 {
+  /* Navbar */
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .logo {
     font-size: 2rem;
+    margin-bottom: 12px;
+  }
+
+  .nav-buttons {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .nav-buttons a {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  /* Sidebar + Dashboard */
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    padding: 20px;
+    align-items: flex-start;
+  }
+
+  .dashboard-main {
+    padding: 20px;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+
+  #logoutBtn {
+    width: 100%;
+  }
+
+  /* Folder images preview scroll */
+  .folder-images {
+    gap: 8px;
+  }
+
+  .folder-images .image-wrapper {
+    width: 80px;
+    height: 80px;
+  }
+
+  /* Shared Images Grid */
+  .gallery-grid,
+  .preview-grid,
+  .gallery-folder-list,
+  .pricing-tiers {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  .tier {
+    padding: 20px;
+  }
+
+  .tier .cta-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Hero Section */
+  .hero {
+    padding: 60px 16px;
+  }
+
+  .hero h2 {
+    font-size: 1.75rem;
   }
 
   .hero p {
     font-size: 1rem;
-    padding: 0 10px;
   }
 
   .cta-buttons {
-    display: flex;
     flex-direction: column;
-    gap: 16px;
     align-items: center;
+    gap: 12px;
+  }
+
+  /* Auth Container */
+  .auth-container {
+    margin: 40px 20px;
+    padding: 24px;
+  }
+
+  /* Gallery Layout */
+  .gallery-grid,
+  .preview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .shared-image {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Folder header */
+ .folder-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 }

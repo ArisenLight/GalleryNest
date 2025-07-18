@@ -1,3 +1,6 @@
+
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getAuth,
@@ -155,26 +158,40 @@ function loadGalleryFolders(userId) {
 
         const shareBtn = document.createElement("button");
         shareBtn.className = "share-btn";
-        shareBtn.textContent = "Share";
+        shareBtn.innerHTML = '<i class="fas fa-link" style="margin-right: 6px;"></i>Share';
         shareBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           const shareURL = `${window.location.origin}/client-view.html?uid=${userId}&client=${folderName}`;
-          navigator.clipboard.writeText(shareURL)
-            .then(() => {
-              shareBtn.textContent = "Copied!";
-              setTimeout(() => (shareBtn.textContent = "Share"), 2000);
-            })
-            .catch(() => {
-              shareBtn.textContent = "Error!";
-              setTimeout(() => (shareBtn.textContent = "Share"), 2000);
-            });
+navigator.clipboard.writeText(shareURL)
+  .then(() => {
+    shareBtn.innerHTML = '<i class="fas fa-check" style="margin-right: 6px;"></i>Copied!';
+    setTimeout(() => {
+      shareBtn.innerHTML = '<i class="fas fa-link" style="margin-right: 6px;"></i>Share';
+    }, 2000);
+  })
+  .catch(() => {
+    shareBtn.innerHTML = '<i class="fas fa-exclamation-triangle" style="margin-right: 6px;"></i>Error!';
+    setTimeout(() => {
+      shareBtn.innerHTML = '<i class="fas fa-link" style="margin-right: 6px;"></i>Share';
+    }, 2000);
+  });
+
         });
+
+        const zipBtn = createDownloadZipButton(userId, folderName);
+
+const actionGroup = document.createElement("div");
+actionGroup.className = "folder-actions";
+actionGroup.appendChild(shareBtn);
+actionGroup.appendChild(zipBtn);
+
 
         const imagesContainer = document.createElement("div");
         imagesContainer.className = "folder-images";
         imagesContainer.style.display = "none";
 
-        folder.append(titleWrapper, shareBtn, imagesContainer);
+       folder.append(titleWrapper, actionGroup, imagesContainer);
+
         let isOpen = false;
 
 titleWrapper.addEventListener("click", () => {
@@ -280,7 +297,8 @@ titleWrapper.addEventListener("click", () => {
           isOpen = !isOpen;
         });
 
-        galleryList.appendChild(folder);
+       
+  galleryList.appendChild(folder);
       });
     })
     .catch((err) => {
@@ -382,4 +400,35 @@ function displayStorageUsage(userId, limitMB = 1024) {
       console.error("Error tracking storage:", err);
       storageUsage.textContent = "Error checking usage.";
     });
+}
+
+
+const functions = getFunctions(app);
+
+
+const generateZip = httpsCallable(functions, "generateZip");
+
+function createDownloadZipButton(uid, galleryName) {
+  const button = document.createElement("button");
+  button.className = "cta-button zip-download-btn";
+  button.innerHTML = '<i class="fas fa-file-archive" style="margin-right: 6px;"></i>Download ZIP';
+  button.onclick = async () => {
+    button.disabled = true;
+    button.textContent = "Preparing...";
+    try {
+      const result = await generateZip({ uid, gallery: galleryName });
+      const link = document.createElement("a");
+      link.href = result.data.url;
+      link.download = `${galleryName}.zip`;
+      link.click();
+      button.innerHTML = '<i class="fas fa-file-archive" style="margin-right: 6px;"></i>Download Again';
+    } catch (error) {
+      console.error("Error generating ZIP:", error);
+      alert("Failed to generate ZIP. Try again later.");
+      button.innerHTML = '<i class="fas fa-file-archive" style="margin-right: 6px;"></i>Download ZIP';
+    } finally {
+      button.disabled = false;
+    }
+  };
+  return button;
 }

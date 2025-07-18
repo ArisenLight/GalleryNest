@@ -1,9 +1,11 @@
-name: Deploy to Firebase Hosting on Push
+name: Deploy to Firebase Hosting
 
 on:
   push:
     branches:
+      - main
       - master
+  pull_request:
 
 permissions:
   contents: read
@@ -13,20 +15,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
-
+      - name: Install Dependencies
+        run: |
+          if [ -f package.json ]; then
+            npm install
+          fi
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PHOTOGALLERY_SAAS }}'
-          channelId: live
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_PHOTOGALLERY_SAAS }}"
           projectId: photogallery-saas

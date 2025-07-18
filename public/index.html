@@ -1,89 +1,100 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GalleryNest – High-Res Client Galleries for Photographers</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <header class="hero">
+    <nav class="navbar">
+      <div class="navbar-left">
+        <h1 class="logo">GalleryNest</h1>
+        <p class="powered-by">by <a href="https://syntaxcorestudio.com" target="_blank">SyntaxCore</a></p>
+      </div>
+      <div class="nav-buttons">
+        <a href="login.html" class="btn-outline">Login</a>
+        <a href="signup.html" class="btn-primary">Sign Up</a>
+      </div>
+    </nav>
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/11.10.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/11.10.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/11.10.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/11.10.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/11.10.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/11.10.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/11.10.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/11.10.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/11.10.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/11.10.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
-
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
+    <!-- Hero Content -->
+    <div class="hero-content">
+      <h2>Deliver Stunning Galleries Without Compromise</h2>
+      <p class="hero-subtext">Your clients deserve to experience your photos in full resolution with a gallery that feels just as professional as your work.</p>
     </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
 
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+    <section class="pricing">
+  <h2>Simple, Scalable Pricing</h2>
+  <p>Start for free — upgrade only when you're ready to grow.</p>
+  <div class="pricing-tiers">
 
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
-        }
-      });
-    </script>
-  </body>
+    <div class="tier">
+      <h3>Free</h3>
+      <p class="price">$0/mo</p>
+      <ul>
+        <li>Up to 500MB storage</li>
+        <li>5 client galleries</li>
+        <li>Gallery share links</li>
+        <li>Basic support</li>
+      </ul>
+      <a href="signup.html?plan=free" class="cta-button">Get Started</a>
+    </div>
+
+    <div class="tier">
+      <h3>Pro</h3>
+      <p class="price">$12/mo</p>
+      <ul>
+        <li>10GB storage</li>
+        <li>Unlimited galleries</li>
+        <li>Custom branding</li>
+        <li>Email support</li>
+      </ul>
+      <a href="signup.html?plan=pro" class="cta-button">Start Free Trial</a>
+    </div>
+
+    <div class="tier">
+      <h3>Studio</h3>
+      <p class="price">$29/mo</p>
+      <ul>
+        <li>50GB storage</li>
+        <li>Advanced analytics</li>
+        <li>Team access (2 users)</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="signup.html?plan=studio" class="cta-button">Start Free Trial</a>
+    </div>
+
+  </div>
+  <p style="margin-top: 20px; font-size: 0.9rem; color: #ccc;">* No credit card required during beta period</p>
+</section>
+
+
+    <!-- Background Animation or SVG -->
+    <div class="hero-background-shape"></div>
+  </header>
+
+<footer style="text-align: center; padding: 20px; font-size: 0.85rem; color: #666;">
+    <p>© 2025 SyntaxCore. All rights reserved. | <a href="terms.html">Terms</a> | <a href="privacy.html">Privacy</a></p>
+  <p>GalleryNest is a product of SyntaxCore.</p>
+</footer>
+
+
+
+  <!-- Modal -->
+  <div id="customAlertModal" class="modal">
+    <div class="modal-content">
+      <p id="customAlertMessage">Alert message goes here.</p>
+      <button id="customAlertCloseBtn" class="btn-primary">Okay</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/signup.js"></script>
+  <script type="module" src="js/utils.js"></script>
+</body>
 </html>

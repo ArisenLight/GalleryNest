@@ -406,7 +406,6 @@ function displayStorageUsage(userId, limitMB = 1024) {
 const functions = getFunctions(app);
 
 
-const generateZip = httpsCallable(functions, "generateZip");
 
 function createDownloadZipButton(uid, galleryName) {
   const button = document.createElement("button");
@@ -415,12 +414,19 @@ function createDownloadZipButton(uid, galleryName) {
   button.onclick = async () => {
     button.disabled = true;
     button.textContent = "Preparing...";
+
+    const url = `https://us-central1-photogallery-saas.cloudfunctions.net/generateZip?uid=${uid}&folder=${galleryName}`;
+    
     try {
-      const result = await generateZip({ uid, gallery: galleryName });
-      const link = document.createElement("a");
-      link.href = result.data.url;
-      link.download = `${galleryName}.zip`;
-      link.click();
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("ZIP failed");
+
+      const blob = await res.blob();
+      const downloadLink = document.createElement("a");
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.download = `${galleryName}.zip`;
+      downloadLink.click();
+
       button.innerHTML = '<i class="fas fa-file-archive" style="margin-right: 6px;"></i>Download Again';
     } catch (error) {
       console.error("Error generating ZIP:", error);

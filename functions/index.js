@@ -16,7 +16,7 @@ exports.generateZip = functions.https.onRequest((req, res) => {
     }
 
     const bucket = admin.storage().bucket();
-    const prefix = `client-gallery/${uid}/${folder}/`;
+    const prefix = `galleries/${uid}/${folder}/`;
 
     try {
       const [files] = await bucket.getFiles({ prefix });

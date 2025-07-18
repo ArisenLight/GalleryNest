@@ -5,10 +5,6 @@ import {
   listAll,
   getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
-import {
-  getFunctions,
-  httpsCallable
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 
 // ✅ Firebase config
 const firebaseConfig = {
@@ -23,8 +19,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
-const functions = getFunctions(app);
-const generateZip = httpsCallable(functions, "generateZip");
 
 // 🔍 Parse URL params
 const params = new URLSearchParams(window.location.search);
@@ -42,12 +36,19 @@ function createClientDownloadZipButton(uid, gallery) {
   button.onclick = async () => {
     button.disabled = true;
     button.textContent = "Preparing...";
+
+    const url = `https://us-central1-photogallery-saas.cloudfunctions.net/generateZip?uid=${uid}&folder=${gallery}`;
+
     try {
-      const result = await generateZip({ uid, gallery });
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("ZIP failed");
+
+      const blob = await res.blob();
       const link = document.createElement("a");
-      link.href = result.data.url;
+      link.href = URL.createObjectURL(blob);
       link.download = `${gallery}.zip`;
       link.click();
+
       button.innerHTML = '<i class="fas fa-file-archive" style="margin-right: 6px;"></i>Download Again';
     } catch (error) {
       console.error("ZIP download failed:", error);
@@ -60,6 +61,7 @@ function createClientDownloadZipButton(uid, gallery) {
 
   return button;
 }
+
 
 // 🖼️ Modal Setup
 let allImageUrls = [];

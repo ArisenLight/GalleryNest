@@ -1,0 +1,280 @@
+body {
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: transparent; /* 🔁 changed from gradient */
+  position: relative; /* 🆕 so child layering behaves */
+  z-index: 0;
+}
+
+
+    h1 {
+      font-size: 2em;
+    }
+
+    .emoji {
+      font-size: 5rem;
+      margin: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 1.2rem;
+      border: none;
+      background-color: #4f46e5;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background-color: #4338ca;
+    }
+
+    @keyframes bounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+
+.emoji.bounce {
+  animation: bounce 0.4s ease;
+}
+
+#matrix-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    transparent,
+    rgba(0, 255, 0, 0.1) 2px,
+    transparent 4px
+  );
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  animation: matrixRain 1s linear infinite;
+}
+
+@keyframes matrixRain {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100px; }
+}
+
+#matrix-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+
+.cool-mode::before {
+  content: "😎";
+  position: fixed;
+  font-size: 5rem;
+  animation: spin 2s linear infinite;
+  top: 20px;
+  right: 20px;
+}
+
+.sleepy-mode::before {
+  content: "💤";
+  position: fixed;
+  font-size: 3rem;
+  animation: floatZzz 2s ease-in-out infinite;
+  top: 40px;
+  left: 30px;
+}
+
+.love-mode::before {
+  content: "💖";
+  position: fixed;
+  font-size: 3rem;
+  animation: pulseHeart 1s infinite;
+  top: 40px;
+  right: 40px;
+}
+
+.party-mode::before {
+  content: "🎉";
+  position: fixed;
+  font-size: 4rem;
+  animation: spin 1s linear infinite;
+  bottom: 20px;
+  left: 50%;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes floatZzz {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulseHeart {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+
+
+/* Base effect container */
+#effect-layer {
+  position: fixed;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* Mood Effects */
+
+/* 😎 Cool */
+.cool-mode::before {
+  content: "🕶️";
+  position: fixed;
+  font-size: 5rem;
+  top: 20px;
+  left: 20px;
+  animation: spin 8s linear infinite;
+}
+
+/* 😴 Sleepy */
+.sleepy-mode::before {
+  content: "💤";
+  position: fixed;
+  font-size: 3rem;
+  animation: floatZzz 2s ease-in-out infinite;
+  top: 40px;
+  left: 30px;
+}
+
+/* 😂 Laughing */
+.laugh-mode {
+  animation: laugh-shake 0.4s ease-in-out;
+}
+@keyframes laugh-shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+/* 🤯 Mind blown */
+.explode-mode::before {
+  content: "💥";
+  position: fixed;
+  font-size: 5rem;
+  top: 10%;
+  left: 50%;
+  animation: explode 0.6s ease-out;
+}
+@keyframes explode {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.5); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* 😡 Angry */
+.angry-mode {
+  animation: angry-vibe 0.3s infinite alternate;
+  background-color: rgba(255, 0, 0, 0.05);
+}
+@keyframes angry-vibe {
+  from { transform: translateX(-2px); }
+  to { transform: translateX(2px); }
+}
+
+/* 😍 Love */
+.love-mode::before {
+  content: "💖";
+  position: fixed;
+  font-size: 3rem;
+  animation: pulseHeart 1s infinite;
+  top: 40px;
+  right: 40px;
+}
+@keyframes pulseHeart {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+
+/* 🥶 Freezing */
+.freeze-mode::before {
+  content: "❄️";
+  position: fixed;
+  font-size: 3rem;
+  animation: snowFall 2s linear infinite;
+  top: 0;
+  left: 50%;
+}
+@keyframes snowFall {
+  0% { transform: translateY(-10px); opacity: 0; }
+  100% { transform: translateY(100vh); opacity: 1; }
+}
+
+/* 😱 Terrified */
+.fear-mode::before {
+  content: "😱";
+  position: fixed;
+  font-size: 4rem;
+  animation: flicker 0.1s alternate infinite;
+  top: 20px;
+  right: 20px;
+}
+@keyframes flicker {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+/* 🧐 Curious */
+.curious-mode::before {
+  content: "❓";
+  position: fixed;
+  font-size: 3rem;
+  animation: floatZzz 1.2s ease-in-out infinite;
+  top: 50px;
+  left: 20px;
+}
+
+/* 🤓 Nerd mode is handled with canvas (already working) */
+
+/* 🥳 Party */
+.party-mode::before {
+  content: "🎉";
+  position: fixed;
+  font-size: 4rem;
+  animation: bounceParty 1s infinite;
+  bottom: 20px;
+  left: 50%;
+}
+@keyframes bounceParty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes floatZzz {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}

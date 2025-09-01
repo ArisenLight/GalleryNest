@@ -1,0 +1,12 @@
+Copyright © 2025 SyntaxCore
+
+All rights reserved.
+
+This software and content are protected by copyright and intellectual property laws. Unauthorized use, reproduction, modification, distribution, or republication without the express written consent of SyntaxCore is strictly prohibited.
+
+You may not:
+- Copy or redistribute this project or portions of it
+- Use the GalleryNest brand, name, or assets without permission
+- Reverse engineer, decompile, or disassemble any part of the system
+
+This software is provided 'as is' without warranty of any kind, either expressed or implied.

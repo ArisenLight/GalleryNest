@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gallery | GalleryNest</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<!-- Primary favicon (auto-detected by most browsers) -->
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+
+<!-- PWA / mobile icons -->
+<link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+<link rel="manifest" href="/favicon/site.webmanifest">
+<meta name="theme-color" content="#5A55EA">
+
+
+
+</head>
+<body>
+  <header class="navbar">
+     <div class="navbar-left">
+        <h1 class="logo">GalleryNest</h1>
+        <p class="powered-by">by <a href="https://syntaxcorestudio.com" target="_blank">SyntaxCore</a></p>
+      </div>
+    <p class="powered-by">Shared by your photographer</p>
+  </header>
+
+  <main class="client-gallery-container">
+    <h2 class="client-title">Your Gallery</h2>
+    <div id="gallery" class="gallery-grid">
+      <p class="loading-msg">Loading images...</p>
+    </div>
+  </main>
+
+<footer style="text-align: center; padding: 20px; font-size: 0.85rem; color: #666;">
+    <p>© 2025 SyntaxCore. All rights reserved. | <a href="terms.html">Terms</a> | <a href="privacy.html">Privacy</a></p>
+  <p>GalleryNest is a product of SyntaxCore.</p>
+</footer>
+
+
+
+  <!-- Global Custom Modal -->
+<div id="customAlertModal" class="modal">
+  <div class="modal-content">
+    <p id="customAlertMessage">Alert message goes here.</p>
+    <button id="customAlertCloseBtn">Okay</button>
+  </div>
+</div>
+
+  <script type="module" src="js/client-view.js"></script>
+  <script type="module" src="js\utils.js"></script>
+</body>
+</html>

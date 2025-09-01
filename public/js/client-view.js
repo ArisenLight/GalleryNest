@@ -3,7 +3,8 @@ import {
   getStorage,
   ref,
   listAll,
-  getDownloadURL
+  getDownloadURL,
+  getMetaData
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 // ✅ Firebase config
@@ -123,44 +124,104 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") modal.style.display = "none";
 });
 
-// 🔽 Load Images + Insert ZIP button
-if (!userId || !client) {
-  galleryContainer.innerHTML = `<p style="color:red;">Invalid gallery link.</p>`;
-} else {
+// Mixed-media preview card
+function createPreviewCard({ url, contentType, name }, imagesOnly, imageIndexMap) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "image-wrapper";
+
+  if (contentType?.startsWith("image/")) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = name;
+    img.className = "shared-image";
+    const idxForModal = imageIndexMap.get(url);
+    img.style.cursor = "pointer";
+    img.addEventListener("click", () => openModal(imagesOnly.map(i => i.url), idxForModal));
+    wrapper.appendChild(img);
+
+  } else if (contentType?.startsWith("video/")) {
+    const vid = document.createElement("video");
+    vid.src = url;
+    vid.controls = true;
+    vid.preload = "metadata";
+    vid.style.width = "100%";
+    vid.style.height = "100%";
+    vid.style.objectFit = "cover";
+    wrapper.appendChild(vid);
+
+  } else if (contentType?.startsWith("audio/")) {
+    const box = document.createElement("div");
+    box.className = "file-card";
+    box.innerHTML = `<i class="fas fa-music"></i><span class="file-name" title="${name}">${name}</span>`;
+    const audio = document.createElement("audio");
+    audio.src = url;
+    audio.controls = true;
+    audio.style.width = "100%";
+    box.appendChild(audio);
+    wrapper.appendChild(box);
+
+  } else {
+    const box = document.createElement("div");
+    box.className = "file-card";
+    box.innerHTML = `
+      <i class="fas fa-file"></i>
+      <span class="file-name" title="${name}">${name}</span>
+      <a class="file-download" href="${url}" download>Download</a>
+    `;
+    wrapper.appendChild(box);
+  }
+
+  return wrapper;
+}
+
+// Main load
+(async function init() {
+  if (!userId || !client) {
+    galleryContainer.innerHTML = `<p style="color:red;">Invalid gallery link.</p>`;
+    return;
+  }
+
+  // ZIP button above gallery
   const zipBtn = createClientDownloadZipButton(userId, client);
   galleryContainer.parentNode.insertBefore(zipBtn, galleryContainer);
 
+  // List files
   const folderRef = ref(storage, `galleries/${userId}/${client}`);
-  listAll(folderRef)
-    .then((res) => {
-      if (res.items.length === 0) {
-        galleryContainer.innerHTML = `
-          <p><img src="public/img/empty-folder.svg" alt="Empty" style="max-width:80px;margin-bottom:12px;"><br>
-          No images in this gallery yet.</p>
-        `;
-        return;
-      }
+  try {
+    const res = await listAll(folderRef);
+    if (res.items.length === 0) {
+      galleryContainer.innerHTML = `
+        <p><img src="public/img/empty-folder.svg" alt="Empty" style="max-width:80px;margin-bottom:12px;"><br>
+        No items in this gallery yet.</p>
+      `;
+      return;
+    }
 
-      galleryContainer.innerHTML = ""; // Clear loading
+    // Fetch URL + metadata for each file
+    const fileData = await Promise.all(
+      res.items.map(async (itemRef) => {
+        try {
+          const [url, meta] = await Promise.all([getDownloadURL(itemRef), getMetadata(itemRef)]);
+          return { url, contentType: meta.contentType || "", name: itemRef.name };
+        } catch (err) {
+          console.error("Could not fetch URL or metadata for", itemRef.fullPath, err);
+          return null;
+        }
+      })
+    );
+    const files = fileData.filter(Boolean);
 
-      const imagePromises = res.items.map((itemRef) =>
-        getDownloadURL(itemRef).then((url) => ({ url, name: itemRef.name }))
-      );
+    // Build image list for modal only
+    const imagesOnly = files.filter(f => f.contentType.startsWith("image/"));
+    const imageIndexMap = new Map(imagesOnly.map((f, idx) => [f.url, idx]));
 
-      Promise.all(imagePromises).then((images) => {
-        images.forEach(({ url, name }, index) => {
-          const img = document.createElement("img");
-          img.src = url;
-          img.alt = name;
-          img.className = "shared-image";
-          img.style.cursor = "pointer";
-          img.addEventListener("click", () => openModal(images.map(i => i.url), index));
-          galleryContainer.appendChild(img);
-        });
-      });
-    })
-    .catch((err) => {
-      console.error("Error loading images:", err);
-      galleryContainer.innerHTML = `<p style="color:red;">Failed to load images.</p>`;
+    galleryContainer.innerHTML = "";
+    files.forEach(f => {
+      galleryContainer.appendChild(createPreviewCard(f, imagesOnly, imageIndexMap));
     });
-}
+
+  } catch (err) {
+    console.error("Error loading gallery:", err);
+    galleryContainer.innerHTML = `<p style="color:red;">Failed to load gallery.</p>`;
+  }
+})();

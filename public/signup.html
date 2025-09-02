@@ -85,7 +85,7 @@ const functions = getFunctions();
 
 async function startCheckout() {
   const plan = localStorage.getItem('gn_selected_plan') || 'pro';
-  const createCheckout = httpsCallable(functions, 'createCheckoutSession');
+  const createCheckout = httpsCallable(functions, 'createCheckoutSessionV2');
   const { data } = await createCheckout({ plan });
   // Option 1: redirect using the URL directly
   if (data.url) { location.assign(data.url); return; }

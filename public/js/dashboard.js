@@ -350,7 +350,7 @@ listAll(innerRef)
 
 //canUpload
 async function canUpload(file) {
-  const checkQuota = httpsCallable(functionsAU, 'checkQuota');
+  const checkQuota = httpsCallable(functionsAU, 'checkQuotaV2');
   const { data } = await checkQuota({ size: file.size });
   if (!data.ok) {
     const usedGB = (data.used / 1e9).toFixed(2);
@@ -429,7 +429,7 @@ function setupUploader(userId) {
 // ─────────────────────────────────────────────
 async function displayStorageUsage(userId) {
   try {
-    const checkQuota = httpsCallable(functionsAU, 'checkQuota');
+    const checkQuota = httpsCallable(functionsAU, 'checkQuotaV2');
     const { data } = await checkQuota({ size: 0 });
     const usedMB = (data.used / (1024 * 1024)).toFixed(1);
     const limitMB = (data.limit / (1024 * 1024)).toFixed(0);

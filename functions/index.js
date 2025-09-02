@@ -4,22 +4,23 @@
 const REGION_AU = 'australia-southeast1';
 const REGION_US = 'us-central1';
 
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const cors = require('cors')({ origin: true });
 const archiver = require('archiver');
-// const { Storage } = require('@google-cloud/storage'); // not used right now
 const stripeLib = require('stripe');
+
+// Gen 2 APIs
+const { onRequest, onCall } = require('firebase-functions/v2/https');
+const { onObjectFinalized, onObjectDeleted } = require('firebase-functions/v2/storage');
 
 // Init Admin
 if (admin.apps.length === 0) admin.initializeApp();
 const db = admin.firestore();
 
-// Stripe
-const STRIPE_SECRET = functions.config().stripe?.secret;
+// Stripe secret from .env
+const STRIPE_SECRET = process.env.STRIPE_SECRET;
 const stripe = STRIPE_SECRET ? stripeLib(STRIPE_SECRET) : null;
 
-// Price IDs in one place
+// Stripe Price IDs
 const PRICE_IDS = {
   pro: 'price_pro_monthly_id_here',
   business: 'price_business_monthly_id_here',
@@ -31,90 +32,124 @@ const GB = 1024 * MB;
 const PLAN_LIMITS = { free: 100 * MB, pro: 10 * GB, business: 50 * GB };
 const limitForPlan = (plan) => PLAN_LIMITS[plan] || PLAN_LIMITS.free;
 
-/* ===========================================
-   US functions (close to your Storage bucket)
-   =========================================== */
+// IMPORTANT: bucket name, not domain. Check in Firebase Console Storage header.
+const BUCKET = 'photogallery-saas.firebasestorage.app'; // update if your console shows a different name
 
-// ZIP from us-central1 bucket
-exports.generateZip = functions
-  .runWith({ memory: '1GiB', timeoutSeconds: 540 })
-  .region(REGION_US)
-  .https.onRequest((req, res) => {
-    cors(req, res, async () => {
-      try {
-        if (req.method === 'OPTIONS') {
-          res.set('Access-Control-Allow-Methods', 'GET');
-          res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-          return res.status(204).send('');
-        }
+/* ================
+   Gen 2 onRequest
+   ================ */
 
-        const { uid, folder } = req.query;
-        if (!uid || !folder) return res.status(400).send('Missing uid or folder');
+exports.generateZip = onRequest(
+  {
+    region: REGION_US,
+    memory: '1GiB',
+    cpu: 1,
+    timeoutSeconds: 540,
+    cors: true
+  },
+  async (req, res) => {
+    try {
+      const { uid, folder } = req.query;
+      if (!uid || !folder) return res.status(400).send('Missing uid or folder');
 
-        const bucket = admin.storage().bucket(); // default us-central1 bucket
-        const prefix = `galleries/${uid}/${folder}/`;
-        const [files] = await bucket.getFiles({ prefix });
+      const bucket = admin.storage().bucket(); // default bucket
+      const prefix = `galleries/${uid}/${folder}/`;
+      const [files] = await bucket.getFiles({ prefix });
 
-        if (!files.length) return res.status(404).send('No files found in this folder');
+      if (!files.length) return res.status(404).send('No files found in this folder');
 
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename="${folder}.zip"`);
-        res.setHeader('Cache-Control', 'private, max-age=60');
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="${folder}.zip"`);
+      res.setHeader('Cache-Control', 'private, max-age=60');
 
-        const archive = archiver('zip', { zlib: { level: 9 } });
-        archive.on('error', err => { console.error('archiver error', err); res.status(500).send({ error: err.message }); });
-        archive.pipe(res);
+      const archive = archiver('zip', { zlib: { level: 9 } });
+      archive.on('error', err => {
+        console.error('archiver error', err);
+        res.status(500).send({ error: err.message });
+      });
+      archive.pipe(res);
 
-        for (const file of files) {
-          const nameInZip = file.name.replace(prefix, '');
-          archive.append(file.createReadStream(), { name: nameInZip });
-        }
-
-        await archive.finalize();
-      } catch (err) {
-        console.error('ZIP error:', err);
-        res.status(500).send('Failed to create ZIP');
+      for (const file of files) {
+        const nameInZip = file.name.replace(prefix, '');
+        archive.append(file.createReadStream(), { name: nameInZip });
       }
-    });
-  });
 
-// Storage usage accounting in US
-exports.onImageFinalize = functions
-  .region(REGION_US)
-  .storage.object()
-  .onFinalize(async (object) => {
+      await archive.finalize();
+    } catch (err) {
+      console.error('ZIP error:', err);
+      res.status(500).send('Failed to create ZIP');
+    }
+  }
+);
+
+/* ========================
+   Gen 2 Storage triggers
+   ======================== */
+
+exports.onImageFinalize = onObjectFinalized(
+  { region: REGION_US, bucket: BUCKET, memory: '256MiB' },
+  async (event) => {
+    const object = event.data;
     const uid = object.metadata && object.metadata.ownerUid;
     if (!uid) return;
     const bytes = Number(object.size || 0);
-    await db.collection('users').doc(uid)
-      .set({ storageUsed: admin.firestore.FieldValue.increment(bytes) }, { merge: true });
-  });
+    await db.collection('users').doc(uid).set(
+      { storageUsed: admin.firestore.FieldValue.increment(bytes) },
+      { merge: true }
+    );
+  }
+);
 
-exports.onImageDelete = functions
-  .region(REGION_US)
-  .storage.object()
-  .onDelete(async (object) => {
+exports.onImageDelete = onObjectDeleted(
+  { region: REGION_US, bucket: BUCKET, memory: '256MiB' },
+  async (event) => {
+    const object = event.data;
     const uid = object.metadata && object.metadata.ownerUid;
     if (!uid) return;
     const bytes = Number(object.size || 0);
-    await db.collection('users').doc(uid)
-      .set({ storageUsed: admin.firestore.FieldValue.increment(-bytes) }, { merge: true });
-  });
+    await db.collection('users').doc(uid).set(
+      { storageUsed: admin.firestore.FieldValue.increment(-bytes) },
+      { merge: true }
+    );
+  }
+);
 
-/* ===========================================
-   AU functions (close to Firestore and users)
-   =========================================== */
+/* ========================
+   Gen 2 Callables (V2)
+   ======================== */
 
-exports.createCheckoutSession = functions
-  .region(REGION_AU)
-  .https.onCall(async (data, context) => {
-    if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required.');
-    if (!stripe) throw new functions.https.HttpsError('failed-precondition', 'Stripe not configured.');
+// Name with V2 suffix to allow side by side testing
+exports.checkQuotaV2 = onCall(
+  { region: REGION_AU, memory: '256MiB', timeoutSeconds: 60 },
+  async (request) => {
+    const auth = request.auth;
+    if (!auth) return { ok: false, error: 'unauthenticated' };
 
-    const plan = (data?.plan || 'pro');
-    if (!PRICE_IDS[plan]) throw new functions.https.HttpsError('invalid-argument', 'Unknown plan.');
+    const uid = auth.uid;
+    const addSize = Number(request.data?.size || 0);
 
-    const uid = context.auth.uid;
+    const doc = await db.collection('users').doc(uid).get();
+    const user = doc.data() || {};
+    const plan = user.plan || 'free';
+    const used = Number(user.storageUsed || 0);
+    const limit = Number(user.storageLimit || limitForPlan(plan));
+
+    const ok = used + addSize <= limit;
+    return { ok, plan, used, limit };
+  }
+);
+
+exports.createCheckoutSessionV2 = onCall(
+  { region: REGION_AU, memory: '256MiB', timeoutSeconds: 60 },
+  async (request) => {
+    const auth = request.auth;
+    if (!auth) return { error: 'unauthenticated' };
+    if (!stripe) return { error: 'Stripe not configured' };
+
+    const plan = request.data?.plan || 'pro';
+    if (!PRICE_IDS[plan]) return { error: 'Unknown plan' };
+
+    const uid = auth.uid;
     const customersRef = db.collection('stripe_customers').doc(uid);
     const snap = await customersRef.get();
 
@@ -137,21 +172,5 @@ exports.createCheckoutSession = functions
     });
 
     return { id: session.id, url: session.url };
-  });
-
-exports.checkQuota = functions
-  .region(REGION_AU)
-  .https.onCall(async (data, context) => {
-    if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Login required.');
-    const uid = context.auth.uid;
-    const addSize = Number(data?.size || 0);
-
-    const doc = await db.collection('users').doc(uid).get();
-    const user = doc.data() || {};
-    const plan = user.plan || 'free';
-    const used = Number(user.storageUsed || 0);
-    const limit = Number(user.storageLimit || limitForPlan(plan));
-
-    const ok = used + addSize <= limit;
-    return { ok, plan, used, limit };
-  });
+  }
+);

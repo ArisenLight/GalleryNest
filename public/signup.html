@@ -76,68 +76,6 @@
   if (label) label.textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
 })();
 </script>
-<script type="module">
-import { initializeApp, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
-
-// If your other script already called initializeApp, you can skip this line and use getApp()
-let app;
-try { app = getApp(); } catch { 
-  app = initializeApp({
-    apiKey: "AIzaSyA1jTgM_13IjQS5V-Rc1-6cgC2YYV2GGxY",
-    authDomain: "photogallery-saas.firebaseapp.com",
-    projectId: "photogallery-saas",
-    storageBucket: "photogallery-saas.firebasestorage.app",
-    messagingSenderId: "1044919360261",
-    appId: "1:1044919360261:web:0a81345d9ae1937856756c",
-    measurementId: "G-GGZXM39LHV"
-  });
-}
-
-const auth = getAuth(app);
-// IMPORTANT: set region to australia-southeast1 for your Gen 2 callables
-const functions = getFunctions(app, "australia-southeast1");
-
-async function startCheckout() {
-  const plan = (localStorage.getItem("gn_selected_plan") || "pro").toLowerCase();
-  const createCheckout = httpsCallable(functions, "createCheckoutSessionV2");
-
-  try {
-    const { data } = await createCheckout({ plan });
-    if (data?.url) {
-      location.assign(data.url);
-    } else if (data?.id) {
-      // If you later add Stripe.js redirectToCheckout, use data.id
-      alert("Checkout session created but no URL returned.");
-    } else {
-      throw new Error("No session returned from server");
-    }
-  } catch (err) {
-    console.error("Checkout failed:", err);
-    alert("Could not start checkout. Please try again.");
-  }
-}
-
-// If you want a button on this page, add it to the HTML and wire it up:
-document.getElementById("start-trial-btn")?.addEventListener("click", async () => {
-  if (!auth.currentUser) {
-    location.assign("/login.html?next=checkout");
-    return;
-  }
-  await startCheckout();
-});
-
-// Also support auto-redirect after login
-onAuthStateChanged(auth, (user) => {
-  const params = new URLSearchParams(location.search);
-  if (user && params.get("next") === "checkout") {
-    startCheckout();
-  }
-});
-</script>
-
-
 
 </body>
 </html>

@@ -28,6 +28,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const functionsAU = getFunctions(app, 'australia-southeast1');
 const auth = getAuth(app);
 const storage = getStorage(app);
 
@@ -347,9 +348,9 @@ listAll(innerRef)
     });
 }
 
-//check quota
+//canUpload
 async function canUpload(file) {
-  const checkQuota = httpsCallable(getFunctions(app, 'australia-southeast1'), 'checkQuota');
+  const checkQuota = httpsCallable(functionsAU, 'checkQuota');
   const { data } = await checkQuota({ size: file.size });
   if (!data.ok) {
     const usedGB = (data.used / 1e9).toFixed(2);
@@ -428,21 +429,17 @@ function setupUploader(userId) {
 // ─────────────────────────────────────────────
 async function displayStorageUsage(userId) {
   try {
-    const checkQuota = httpsCallable(getFunctions(app, 'australia-southeast1'), 'checkQuota');
-    const { data } = await checkQuota({ size: 0 }); // just fetch used and limit
+    const checkQuota = httpsCallable(functionsAU, 'checkQuota');
+    const { data } = await checkQuota({ size: 0 });
     const usedMB = (data.used / (1024 * 1024)).toFixed(1);
     const limitMB = (data.limit / (1024 * 1024)).toFixed(0);
     storageUsage.textContent = `${usedMB} MB of ${limitMB} MB used`;
-    storageUsage.style.color = (data.used / data.limit) >= 0.9 ? "red" : "#333";
+    storageUsage.style.color = data.used / data.limit >= 0.9 ? 'red' : '#333';
   } catch (err) {
-    console.error("Error checking usage:", err);
-    storageUsage.textContent = "Error checking usage.";
+    console.error('checkQuota failed:', err.code, err.message);
+    storageUsage.textContent = 'Error checking usage.';
   }
 }
-
-
-
-const functions = getFunctions(app, 'australia-southeast1');
 
 
 

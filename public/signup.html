@@ -16,6 +16,7 @@
 <link rel="manifest" href="/favicon/site.webmanifest">
 <meta name="theme-color" content="#5A55EA">
 
+<meta name="robots" content="noindex, nofollow">
 
 
 </head>
@@ -58,6 +59,56 @@
 </div>
 
   <script type="module" src="js/signup.js"></script>
-  <script type="module" src="js\utils.js"></script>
+  <script type="module" src="js/utils.js"></script>
+  <script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const plan = (params.get('plan') || 'free').toLowerCase();
+  // Persist for post-auth flows
+  localStorage.setItem('gn_selected_plan', plan);
+
+  // Optional: reflect in the UI if you have radio buttons
+  const el = document.querySelector(`input[name="plan"][value="${plan}"]`);
+  if (el) el.checked = true;
+
+  // Optional: text label
+  const label = document.getElementById('selected-plan-label');
+  if (label) label.textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
+})();
+</script>
+<script type="module">
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const auth = getAuth();
+const functions = getFunctions();
+
+async function startCheckout() {
+  const plan = localStorage.getItem('gn_selected_plan') || 'pro';
+  const createCheckout = httpsCallable(functions, 'createCheckoutSession');
+  const { data } = await createCheckout({ plan });
+  // Option 1: redirect using the URL directly
+  if (data.url) { location.assign(data.url); return; }
+  // Option 2: if using Stripe.js, you could redirectToCheckout with sessionId
+}
+
+document.getElementById('start-trial-btn')?.addEventListener('click', async () => {
+  const user = auth.currentUser;
+  if (!user) {
+    // Show login first, then call startCheckout after auth
+    location.assign('/login.html?next=checkout');
+    return;
+  }
+  await startCheckout();
+});
+
+// If user arrived from login and wants checkout
+onAuthStateChanged(auth, user => {
+  const params = new URLSearchParams(location.search);
+  if (user && params.get('next') === 'checkout') startCheckout();
+});
+</script>
+
+
 </body>
 </html>

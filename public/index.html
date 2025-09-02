@@ -41,50 +41,100 @@
       <p class="hero-subtext">Your clients deserve to experience your photos in full resolution with a gallery that feels just as professional as your work.</p>
     </div>
 
-    <section class="pricing">
-  <h2>Simple, Scalable Pricing</h2>
-  <p>Start for free — upgrade only when you're ready to grow.</p>
-  <div class="pricing-tiers">
+    <section id="pricing" class="gn-pricing">
+  <div class="gn-pricing__header">
+    <h2>Simple pricing</h2>
+    <p>Start free. Upgrade any time. Pro and Business come with a 14 day free trial.</p>
 
-    <div class="tier">
-      <h3>Free</h3>
-      <p class="price">$0/mo</p>
-      <ul>
-        <li>Up to 500MB storage</li>
-        <li>5 client galleries</li>
-        <li>Gallery share links</li>
-        <li>Basic support</li>
-      </ul>
-      <a href="signup.html?plan=free" class="cta-button">Get Started</a>
+    <!-- Billing toggle -->
+    <div class="gn-toggle" role="group" aria-label="Billing period">
+      <input type="radio" name="gn-billing" id="gn-bill-monthly" value="monthly" checked>
+      <label for="gn-bill-monthly">Monthly</label>
+      <input type="radio" name="gn-billing" id="gn-bill-yearly" value="yearly">
+      <label for="gn-bill-yearly">Yearly <span class="gn-save">save 15%</span></label>
     </div>
+  </div>
 
-    <div class="tier">
-      <h3>Pro</h3>
-      <p class="price">$12/mo</p>
-      <ul>
-        <li>10GB storage</li>
+  <div class="gn-grid" data-billing="monthly">
+    <!-- Free -->
+    <article class="gn-card" aria-label="Free plan">
+      <header class="gn-card__head">
+        <h3>Free</h3>
+        <p class="gn-sub">Great for hobbyists testing GalleryNest</p>
+      </header>
+      <div class="gn-price">
+        <span class="gn-amount">$0</span><span class="gn-cycle">/mo</span>
+      </div>
+      <ul class="gn-features">
+        <li>100 MB storage</li>
+        <li>1 active gallery</li>
+        <li>Public share links</li>
+        <li>Ads shown in client view</li>
+        <li>Powered by GalleryNest branding</li>
+      </ul>
+      <a class="gn-btn gn-btn--ghost" href="/signup.html?plan=free">Start for free</a>
+      <p class="gn-note">Free forever</p>
+    </article>
+
+    <!-- Pro - highlighted -->
+    <article class="gn-card gn-card--popular" aria-label="Pro plan">
+      <div class="gn-badge" aria-hidden="true">Most popular</div>
+      <header class="gn-card__head">
+        <h3>Pro</h3>
+        <p class="gn-sub">Ideal for working photographers</p>
+      </header>
+      <div class="gn-price">
+        <!-- edit numbers as you like -->
+        <span class="gn-amount gn-monthly">$12</span>
+        <span class="gn-amount gn-yearly">$10</span>
+        <span class="gn-cycle">/mo</span>
+      </div>
+      <ul class="gn-features">
+        <li>10 GB storage</li>
         <li>Unlimited galleries</li>
-        <li>Custom branding</li>
+        <li>No ads</li>
+        <li>Custom logo and theme</li>
+        <li>Password protected galleries</li>
+        <li>Full resolution ZIP downloads</li>
         <li>Email support</li>
       </ul>
-      <a href="signup.html?plan=pro" class="cta-button">Start Free Trial</a>
-    </div>
+      <a class="gn-btn" href="/signup.html?plan=pro">Start 14 day free trial</a>
+      <p class="gn-note">No card required for trial</p>
+    </article>
 
-    <div class="tier">
-      <h3>Studio</h3>
-      <p class="price">$29/mo</p>
-      <ul>
-        <li>50GB storage</li>
-        <li>Advanced analytics</li>
-        <li>Team access (2 users)</li>
+    <!-- Business -->
+    <article class="gn-card" aria-label="Business plan">
+      <header class="gn-card__head">
+        <h3>Business</h3>
+        <p class="gn-sub">Studios and teams</p>
+      </header>
+      <div class="gn-price">
+        <span class="gn-amount gn-monthly">$29</span>
+        <span class="gn-amount gn-yearly">$25</span>
+        <span class="gn-cycle">/mo</span>
+      </div>
+      <ul class="gn-features">
+        <li>50 GB storage</li>
+        <li>Unlimited galleries</li>
+        <li>Full white label domain</li>
+        <li>Expiring links and analytics</li>
+        <li>Unlimited ZIP downloads</li>
+        <li>Team access</li>
         <li>Priority support</li>
       </ul>
-      <a href="signup.html?plan=studio" class="cta-button">Start Free Trial</a>
-    </div>
-
+      <a class="gn-btn gn-btn--outline" href="/signup.html?plan=business">Start 14 day free trial</a>
+      <p class="gn-note">Cancel any time</p>
+    </article>
   </div>
-  <p style="margin-top: 20px; font-size: 0.9rem; color: #ccc;">* No credit card required during beta period</p>
+
+  <p class="gn-fineprint">
+    By continuing you agree to our
+    <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy</a>.
+  </p>
 </section>
+
+
+
 
 
     <!-- Background Animation or SVG -->
@@ -110,5 +160,6 @@
   <!-- Scripts -->
   <script type="module" src="js/signup.js"></script>
   <script type="module" src="js/utils.js"></script>
+  <script src="js/pricing.js" defer></script>
 </body>
 </html>

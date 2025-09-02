@@ -347,6 +347,20 @@ listAll(innerRef)
     });
 }
 
+//check quota
+async function canUpload(file) {
+  const checkQuota = httpsCallable(getFunctions(app, 'australia-southeast1'), 'checkQuota');
+  const { data } = await checkQuota({ size: file.size });
+  if (!data.ok) {
+    const usedGB = (data.used / 1e9).toFixed(2);
+    const limitGB = (data.limit / 1e9).toFixed(2);
+    alert(`Storage limit reached. Used ${usedGB} GB of ${limitGB} GB.`);
+    return false;
+  }
+  return true;
+}
+
+
 // ─────────────────────────────────────────────
 // UPLOAD
 // ─────────────────────────────────────────────
@@ -369,81 +383,66 @@ function setupUploader(userId) {
 
     let completed = 0;
 
-    [...files].forEach((file) => {
-      const filePath = `galleries/${userId}/${clientName}/${file.name}`;
-      const fileRef = ref(storage, filePath);
-      const uploadTask = uploadBytesResumable(fileRef, file);
+    (async () => {
+  for (const file of [...files]) {
+    // 1) Check quota before each file
+    const ok = await canUpload(file);
+    if (!ok) continue;
 
+    // 2) Upload with ownerUid metadata so Functions can track usage
+    const filePath = `galleries/${userId}/${clientName}/${file.name}`;
+    const fileRef = ref(storage, filePath);
+    const uploadTask = uploadBytesResumable(fileRef, file, {
+      customMetadata: { ownerUid: currentUserId }
+    });
+
+    await new Promise((resolve, reject) => {
       uploadTask.on("state_changed",
         null,
-        (error) => {
-          console.error("Upload failed:", error);
-          uploadStatus.textContent = "Upload failed. Please try again.";
-          uploadStatus.style.color = "red";
-          uploadBtn.disabled = false;
-        },
-        () => {
-          completed++;
-          if (completed === files.length) {
-            uploadStatus.textContent = "All images uploaded!";
-            uploadStatus.style.color = "green";
-            uploadForm.reset();
-            uploadBtn.disabled = false;
-            loadGalleryFolders(userId);
-            displayStorageUsage(userId);
-          }
-        }
+        (error) => reject(error),
+        () => resolve()
       );
     });
+
+    completed++;
+    if (completed === files.length) {
+      uploadStatus.textContent = "All images uploaded!";
+      uploadStatus.style.color = "green";
+      uploadForm.reset();
+      uploadBtn.disabled = false;
+      loadGalleryFolders(userId);
+      displayStorageUsage(userId);
+    }
+  }
+})().catch((error) => {
+  console.error("Upload failed:", error);
+  uploadStatus.textContent = "Upload failed. Please try again.";
+  uploadStatus.style.color = "red";
+  uploadBtn.disabled = false;
+});
   });
 }
 
 // ─────────────────────────────────────────────
 // STORAGE TRACKER
 // ─────────────────────────────────────────────
-function displayStorageUsage(userId, limitMB = 1024) {
-  const baseRef = ref(storage, `galleries/${userId}`);
-  let totalBytes = 0;
-
-  listAll(baseRef)
-    .then((res) => {
-      const folders = res.prefixes;
-      if (folders.length === 0) {
-        storageUsage.textContent = `0 MB of ${limitMB} MB used`;
-        return;
-      }
-
-      let completed = 0;
-
-      folders.forEach((folderRef) => {
-        listAll(folderRef).then((res2) => {
-          const promises = res2.items.map((itemRef) =>
-            getMetadata(itemRef)
-              .then((meta) => {
-                totalBytes += meta.size || 0;
-              })
-              .catch(() => {})
-          );
-
-          Promise.all(promises).then(() => {
-            completed++;
-            if (completed === folders.length) {
-              const usedMB = (totalBytes / (1024 * 1024)).toFixed(1);
-              storageUsage.textContent = `${usedMB} MB of ${limitMB} MB used`;
-              storageUsage.style.color = usedMB / limitMB >= 0.9 ? "red" : "#333";
-            }
-          });
-        });
-      });
-    })
-    .catch((err) => {
-      console.error("Error tracking storage:", err);
-      storageUsage.textContent = "Error checking usage.";
-    });
+async function displayStorageUsage(userId) {
+  try {
+    const checkQuota = httpsCallable(getFunctions(app, 'australia-southeast1'), 'checkQuota');
+    const { data } = await checkQuota({ size: 0 }); // just fetch used and limit
+    const usedMB = (data.used / (1024 * 1024)).toFixed(1);
+    const limitMB = (data.limit / (1024 * 1024)).toFixed(0);
+    storageUsage.textContent = `${usedMB} MB of ${limitMB} MB used`;
+    storageUsage.style.color = (data.used / data.limit) >= 0.9 ? "red" : "#333";
+  } catch (err) {
+    console.error("Error checking usage:", err);
+    storageUsage.textContent = "Error checking usage.";
+  }
 }
 
 
-const functions = getFunctions(app);
+
+const functions = getFunctions(app, 'australia-southeast1');
 
 
 

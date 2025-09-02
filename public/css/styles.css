@@ -1139,3 +1139,68 @@ body {
     flex-wrap: wrap;
   }
 }
+
+:root{
+  --gn-accent: #6b8afd;
+  --gn-accent-ink: #0b1229;
+  --gn-ink: #101318;
+  --gn-muted: #5b6472;
+  --gn-bg: #0f1218;           /* falls back nicely if you use a dark theme */
+  --gn-card: #141a23;
+  --gn-border: #232a36;
+  --gn-shadow: 0 8px 28px rgba(0,0,0,.25);
+}
+
+/* container */
+.gn-pricing{padding:clamp(2rem,4vw,4rem) 1rem; max-width:1100px; margin:0 auto;}
+.gn-pricing__header{text-align:center; margin-bottom:2rem;}
+.gn-pricing__header h2{font-size:clamp(1.8rem,3vw,2.4rem); margin:0 0 .25rem 0;}
+.gn-pricing__header p{color:var(--gn-muted);}
+
+/* toggle */
+.gn-toggle{display:inline-grid; grid-auto-flow:column; gap:.25rem; background:var(--gn-card);
+  border:1px solid var(--gn-border); border-radius:999px; padding:.25rem; margin-top:1rem;}
+.gn-toggle input{position:absolute; opacity:0; pointer-events:none;}
+.gn-toggle label{padding:.5rem .9rem; border-radius:999px; cursor:pointer; user-select:none;}
+.gn-toggle input:checked + label{background:var(--gn-accent); color:#fff;}
+
+/* grid */
+.gn-grid{display:grid; gap:1rem; grid-template-columns:repeat(1,minmax(0,1fr));}
+@media (min-width:768px){ .gn-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+
+/* cards */
+.gn-card{background:var(--gn-card); border:1px solid var(--gn-border); border-radius:18px; padding:1.25rem; box-shadow:var(--gn-shadow);}
+.gn-card--popular{outline:2px solid var(--gn-accent); position:relative;}
+.gn-badge{position:absolute; top:-10px; right:14px; background:var(--gn-accent); color:#fff; font-size:.75rem;
+  padding:.25rem .5rem; border-radius:999px;}
+.gn-card__head h3{margin:.25rem 0 0 0; font-size:1.25rem;}
+.gn-sub{margin:.25rem 0 0 0; color:var(--gn-muted); font-size:.95rem;}
+
+/* price */
+.gn-price{display:flex; align-items:flex-end; gap:.25rem; margin:1rem 0;}
+.gn-amount{font-size:2rem; font-weight:800; line-height:1;}
+.gn-cycle{color:var(--gn-muted);}
+
+/* features */
+.gn-features{list-style:none; padding:0; margin:1rem 0 1.25rem 0; display:grid; gap:.5rem;}
+.gn-features li{position:relative; padding-left:1.4rem;}
+.gn-features li::before{content:"✔"; position:absolute; left:0; top:0; transform:translateY(1px); opacity:.9;}
+
+/* buttons */
+.gn-btn{display:inline-block; text-align:center; padding:.7rem 1rem; border-radius:12px;
+  background:var(--gn-accent); color:#fff; text-decoration:none; font-weight:600;}
+.gn-btn:hover{filter:brightness(1.05);}
+.gn-btn--outline{background:transparent; color:#fff; border:1px solid var(--gn-border);}
+.gn-btn--ghost{background:transparent; color:#fff; border:1px dashed var(--gn-border);}
+.gn-note{margin:.5rem 0 0 0; color:var(--gn-muted); font-size:.9rem;}
+
+/* save pill */
+.gn-save{background:rgba(107,138,253,.15); color:#c9d2ff; padding:.1rem .4rem; border-radius:999px; font-size:.75rem; margin-left:.25rem}
+
+/* fineprint */
+.gn-fineprint{margin-top:1rem; text-align:center; color:var(--gn-muted); font-size:.9rem;}
+.gn-fineprint a{color:#c9d2ff; text-decoration:underline;}
+
+/* billing display: show monthly or yearly numbers */
+.gn-grid[data-billing="monthly"] .gn-yearly{display:none;}
+.gn-grid[data-billing="yearly"] .gn-monthly{display:none;}

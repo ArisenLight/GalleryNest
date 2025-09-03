@@ -56,6 +56,42 @@ const nextArrow = document.getElementById("nextArrow");
 let currentImageIndex = 0;
 let allImagesInFolder = [];
 
+const billingInfoEl = document.getElementById("billingInfo");
+
+function approx(val, target, tol = 0.6) {
+  return Math.abs(val - target) <= tol;
+}
+
+function planFromLimit(limitBytes) {
+  const GB = 1024 * 1024 * 1024;
+  const limitGB = limitBytes / GB;
+
+  // Adjust these to match your real tiers
+  if (approx(limitGB, 5))   return { name: "Free",    cls: "free" };
+  if (approx(limitGB, 20))  return { name: "Starter", cls: "starter" };
+  if (approx(limitGB, 100)) return { name: "Pro",     cls: "pro" };
+
+  return { name: "Custom", cls: "custom" };
+}
+
+async function updateBillingInfo() {
+  if (!billingInfoEl) return;
+  try {
+    const checkQuota = httpsCallable(functionsAU, "checkQuotaV2");
+    const { data } = await checkQuota({ size: 0 });
+
+    const plan = planFromLimit(data.limit);
+
+    billingInfoEl.innerHTML = `
+      Plan: <span class="plan-badge ${plan.cls}">${plan.name}</span>
+    `;
+  } catch (err) {
+    console.error("updateBillingInfo failed:", err);
+    billingInfoEl.textContent = "Plan: Unknown";
+  }
+}
+
+
 function openModal(images, startIndex) {
   allImagesInFolder = images;
   currentImageIndex = startIndex;
@@ -112,6 +148,7 @@ onAuthStateChanged(auth, (user) => {
   loadGalleryFolders(currentUserId);
   setupUploader(currentUserId);
   displayStorageUsage(currentUserId);
+  updateBillingInfo();
 });
 
 logoutBtn?.addEventListener("click", () => {
@@ -413,6 +450,7 @@ function setupUploader(userId) {
       uploadBtn.disabled = false;
       loadGalleryFolders(userId);
       displayStorageUsage(userId);
+      updateBillingInfo();
     }
   }
 })().catch((error) => {
@@ -474,3 +512,5 @@ function createDownloadZipButton(uid, galleryName) {
   };
   return button;
 }
+
+

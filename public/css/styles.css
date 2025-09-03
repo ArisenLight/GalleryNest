@@ -1021,8 +1021,8 @@ body {
   margin-left: 6px;
 }
 .plan-badge.free    { background: #f1f5f9; color: #334155; }
-.plan-badge.starter { background: #e0f2fe; color: #0c4a6e; }
-.plan-badge.pro     { background: #ecfdf5; color: #065f46; }
+.plan-badge.pro { background: #e0f2fe; color: #0c4a6e; }
+.plan-badge.business     { background: #ecfdf5; color: #065f46; }
 .plan-badge.custom  { background: #faf5ff; color: #6b21a8; }
 .usage-small { font-weight: 400; margin-left: 8px; color: #64748b; font-size: 12px; }
 

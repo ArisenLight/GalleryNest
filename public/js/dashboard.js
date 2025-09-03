@@ -63,16 +63,115 @@ function approx(val, target, tol = 0.6) {
 }
 
 function planFromLimit(limitBytes) {
-  const GB = 1024 * 1024 * 1024;
-  const limitGB = limitBytes / GB;
+  if (typeof limitBytes !== "number" || !isFinite(limitBytes)) {
+    return { name: "Unknown", cls: "custom" };
+  }
 
-  // Adjust these to match your real tiers
-  if (approx(limitGB, 5))   return { name: "Free",    cls: "free" };
-  if (approx(limitGB, 20))  return { name: "Starter", cls: "starter" };
-  if (approx(limitGB, 100)) return { name: "Pro",     cls: "pro" };
+  const limitMB = limitBytes / (1024 * 1024);  // convert bytes → MB
+  const limitGB = limitBytes / (1024 * 1024 * 1024);
 
+  // Free: 100 MB
+  if (limitMB <= 120) {
+    return { name: "Free", cls: "free" };
+  }
+
+  // Pro: 10 GB
+  if (limitGB <= 11) {
+    return { name: "Pro", cls: "pro" };
+  }
+
+  // Business: 50 GB
+  if (limitGB <= 55) {
+    return { name: "Business", cls: "business" };
+  }
+
+  // Anything else
   return { name: "Custom", cls: "custom" };
 }
+
+const upgradeLi = document.getElementById("upgrade");
+const upgradeBtn = upgradeLi?.querySelector("button");
+const planModal = document.getElementById("planModal");
+const currentPlanEl = document.getElementById("currentPlan");
+const manageBillingBtn = document.getElementById("manageBillingBtn");
+const closePlanModal = document.getElementById("closePlanModal");
+
+// Map your UI plan keys to Stripe price IDs (we will set real IDs in Functions config)
+const PLAN_PRICE_KEY = {
+  pro: "price_pro_monthly",         // placeholder key
+  business: "price_business_monthly"// placeholder key
+};
+
+function showPlanModal(planName) {
+  if (currentPlanEl) currentPlanEl.textContent = planName || "Unknown";
+  planModal.style.display = "block";
+}
+
+function hidePlanModal() {
+  planModal.style.display = "none";
+}
+
+closePlanModal?.addEventListener("click", hidePlanModal);
+planModal?.addEventListener("click", (e) => {
+  if (e.target === planModal) hidePlanModal();
+});
+
+upgradeBtn?.addEventListener("click", async () => {
+  // Open modal with detected plan from your badge
+  const badge = document.querySelector("#billingInfo .plan-badge");
+  const name = badge ? badge.textContent.trim() : null;
+  showPlanModal(name);
+});
+
+// Click handlers for plan buttons
+document.querySelectorAll(".plan-btn").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const planKey = btn.getAttribute("data-plan");
+    await startCheckout(planKey);
+  });
+});
+
+// Manage billing opens the Stripe customer portal
+manageBillingBtn?.addEventListener("click", async () => {
+  try {
+    const portalCallable = httpsCallable(functionsAU, "createBillingPortalSession");
+    const { data } = await portalCallable({ returnUrl: window.location.href });
+    if (data?.url) window.location.assign(data.url);
+  } catch (err) {
+    console.error("Portal error", err);
+    alert("Could not open billing portal. Try again shortly.");
+  }
+});
+
+// Start Checkout for a selected plan
+async function startCheckout(planKey) {
+  const priceKey = PLAN_PRICE_KEY[planKey];
+  if (!priceKey) return alert("Unknown plan");
+
+  try {
+    // Disable modal buttons briefly
+    document.querySelectorAll(".plan-btn").forEach(b => b.disabled = true);
+
+    const createSession = httpsCallable(functionsAU, "createCheckoutSession");
+    const { data } = await createSession({
+      priceKey,
+      successUrl: window.location.origin + "/dashboard.html?upgrade=success",
+      cancelUrl: window.location.href
+    });
+
+    if (data?.url) {
+      window.location.assign(data.url);
+    } else {
+      throw new Error("No checkout url");
+    }
+  } catch (err) {
+    console.error("Checkout error", err);
+    alert("Could not start checkout. Try again.");
+  } finally {
+    document.querySelectorAll(".plan-btn").forEach(b => b.disabled = false);
+  }
+}
+
 
 async function updateBillingInfo() {
   if (!billingInfoEl) return;

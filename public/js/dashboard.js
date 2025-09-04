@@ -145,19 +145,14 @@ manageBillingBtn?.addEventListener("click", async () => {
 
 // Start Checkout for a selected plan
 async function startCheckout(planKey) {
-  const priceKey = PLAN_PRICE_KEY[planKey];
-  if (!priceKey) return alert("Unknown plan");
+  if (!["pro","business"].includes(planKey)) return alert("Unknown plan");
 
   try {
-    // Disable modal buttons briefly
     document.querySelectorAll(".plan-btn").forEach(b => b.disabled = true);
 
-    const createSession = httpsCallable(functionsAU, "createCheckoutSessionV2");
-    const { data } = await createSession({
-      priceKey,
-      successUrl: window.location.origin + "/dashboard.html?upgrade=success",
-      cancelUrl: window.location.href
-    });
+    // call the canonical name (alias exists too)
+    const createSession = httpsCallable(functionsAU, "createCheckoutSession");
+    const { data } = await createSession({ plan: planKey });
 
     if (data?.url) {
       window.location.assign(data.url);

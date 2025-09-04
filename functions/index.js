@@ -189,15 +189,24 @@ exports.createCheckoutSession = onCall(
   }
 );
 
+// Optional alias so old client names still work
+exports.createCheckoutSessionV2 = exports.createCheckoutSession;
+
+
 // Create a Stripe Billing Portal Session
 // add near other exports
 exports.createBillingPortalSession = onCall(
-  { region: REGION_AU, memory: '256MiB', timeoutSeconds: 60 },
+  {
+    region: REGION_AU,
+    memory: '256MiB',
+    timeoutSeconds: 60,
+    secrets: [STRIPE_SECRET_KEY],     // <— IMPORTANT
+  },
   async (request) => {
     const auth = request.auth;
     if (!auth) return { error: 'unauthenticated' };
-    if (!stripe) return { error: 'Stripe not configured' };
 
+    const stripe = stripeLib(STRIPE_SECRET_KEY.value());  // <— initialize Stripe
     const uid = auth.uid;
 
     // get or create a Stripe customer for this Firebase user
@@ -212,7 +221,6 @@ exports.createBillingPortalSession = onCall(
       await custRef.set({ customerId }, { merge: true });
     }
 
-    // Use the current page as returnUrl if provided
     const returnUrl = request.data?.returnUrl || 'https://gallerynest.syntaxcorestudio.com/dashboard.html';
 
     const portal = await stripe.billingPortal.sessions.create({
@@ -223,6 +231,7 @@ exports.createBillingPortalSession = onCall(
     return { url: portal.url };
   }
 );
+
 
 
 // Stripe Webhook
@@ -240,24 +249,26 @@ exports.stripeWebhook = onRequest(
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.created') {
-      const subscription = event.data.object;
-      const uid = subscription.metadata?.firebaseUID;
-      if (uid) {
-        const planId = subscription.items.data[0].price.id;
-        const plan =
-          planId === PRICE_PRO_MONTHLY.value()
-            ? 'pro'
-            : planId === PRICE_BUSINESS_MONTHLY.value()
-            ? 'business'
-            : 'free';
+    if (event.type === 'customer.subscription.created' || event.type === 'customer.subscription.updated') {
+  const subscription = event.data.object;
+  const customerId = subscription.customer;
 
-        await db.collection('users').doc(uid).set(
-          { plan, storageLimit: limitForPlan(plan) },
-          { merge: true }
-        );
-      }
-    }
+  // Find uid by reverse lookup
+  const match = await db.collection('stripe_customers').where('customerId', '==', customerId).limit(1).get();
+  if (!match.empty) {
+    const uid = match.docs[0].id;
+    const planId = subscription.items.data[0].price.id;
+    const plan =
+      planId === PRICE_PRO_MONTHLY.value() ? 'pro' :
+      planId === PRICE_BUSINESS_MONTHLY.value() ? 'business' : 'free';
+
+    await db.collection('users').doc(uid).set(
+      { plan, storageLimit: limitForPlan(plan) },
+      { merge: true }
+    );
+  }
+}
+
 
     res.json({ received: true });
   }

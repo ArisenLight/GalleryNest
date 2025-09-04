@@ -11,20 +11,17 @@ const stripeLib = require('stripe');
 // Gen 2 APIs
 const { onRequest, onCall } = require('firebase-functions/v2/https');
 const { onObjectFinalized, onObjectDeleted } = require('firebase-functions/v2/storage');
+const { defineSecret } = require('firebase-functions/params');
 
 // Init Admin
 if (admin.apps.length === 0) admin.initializeApp();
 const db = admin.firestore();
 
-// Stripe secret from .env
-const STRIPE_SECRET = process.env.STRIPE_SECRET;
-const stripe = STRIPE_SECRET ? stripeLib(STRIPE_SECRET) : null;
-
-// Stripe Price IDs
-const PRICE_IDS = {
-  pro: 'price_pro_monthly_id_here',
-  business: 'price_business_monthly_id_here',
-};
+// Stripe secrets (defined in Firebase CLI)
+const STRIPE_SECRET_KEY = defineSecret('STRIPE_SECRET_KEY');
+const PRICE_PRO_MONTHLY = defineSecret('PRICE_PRO_MONTHLY');
+const PRICE_BUSINESS_MONTHLY = defineSecret('PRICE_BUSINESS_MONTHLY');
+const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
 
 // Plan limits
 const MB = 1024 * 1024;
@@ -33,12 +30,13 @@ const PLAN_LIMITS = { free: 100 * MB, pro: 10 * GB, business: 50 * GB };
 const limitForPlan = (plan) => PLAN_LIMITS[plan] || PLAN_LIMITS.free;
 
 // IMPORTANT: bucket name, not domain. Check in Firebase Console Storage header.
-const BUCKET = 'photogallery-saas.firebasestorage.app'; // update if your console shows a different name
+const BUCKET = 'photogallery-saas.firebasestorage.app'; // update if your console shows a different bucket name
 
 /* ================
    Gen 2 onRequest
    ================ */
 
+// Generate ZIP for gallery downloads
 exports.generateZip = onRequest(
   {
     region: REGION_US,
@@ -86,6 +84,7 @@ exports.generateZip = onRequest(
    Gen 2 Storage triggers
    ======================== */
 
+// Track storage usage on upload
 exports.onImageFinalize = onObjectFinalized(
   { region: REGION_US, bucket: BUCKET, memory: '256MiB' },
   async (event) => {
@@ -100,6 +99,7 @@ exports.onImageFinalize = onObjectFinalized(
   }
 );
 
+// Track storage usage on delete
 exports.onImageDelete = onObjectDeleted(
   { region: REGION_US, bucket: BUCKET, memory: '256MiB' },
   async (event) => {
@@ -118,7 +118,7 @@ exports.onImageDelete = onObjectDeleted(
    Gen 2 Callables (V2)
    ======================== */
 
-// Name with V2 suffix to allow side by side testing
+// Check quota + plan info
 exports.checkQuotaV2 = onCall(
   { region: REGION_AU, memory: '256MiB', timeoutSeconds: 60 },
   async (request) => {
@@ -139,15 +139,29 @@ exports.checkQuotaV2 = onCall(
   }
 );
 
-exports.createCheckoutSessionV2 = onCall(
-  { region: REGION_AU, memory: '256MiB', timeoutSeconds: 60 },
+// Create a Stripe Checkout Session
+exports.createCheckoutSession = onCall(
+  {
+    region: REGION_AU,
+    memory: '256MiB',
+    timeoutSeconds: 60,
+    secrets: [STRIPE_SECRET_KEY, PRICE_PRO_MONTHLY, PRICE_BUSINESS_MONTHLY]
+  },
   async (request) => {
     const auth = request.auth;
     if (!auth) return { error: 'unauthenticated' };
-    if (!stripe) return { error: 'Stripe not configured' };
 
-    const plan = request.data?.plan || 'pro';
-    if (!PRICE_IDS[plan]) return { error: 'Unknown plan' };
+    const stripe = stripeLib(STRIPE_SECRET_KEY.value());
+    const planKey = request.data?.plan || 'pro';
+
+    const priceId =
+      planKey === 'pro'
+        ? PRICE_PRO_MONTHLY.value()
+        : planKey === 'business'
+        ? PRICE_BUSINESS_MONTHLY.value()
+        : null;
+
+    if (!priceId) return { error: 'Unknown plan' };
 
     const uid = auth.uid;
     const customersRef = db.collection('stripe_customers').doc(uid);
@@ -164,13 +178,73 @@ exports.createCheckoutSessionV2 = onCall(
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
-      line_items: [{ price: PRICE_IDS[plan], quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: { trial_period_days: 14 },
       success_url: 'https://gallerynest.syntaxcorestudio.com/dashboard.html?checkout=success',
-      cancel_url: 'https://gallerynest.syntaxcorestudio.com/signup.html?checkout=cancel',
+      cancel_url: 'https://gallerynest.syntaxcorestudio.com/dashboard.html?checkout=cancel',
       allow_promotion_codes: true
     });
 
     return { id: session.id, url: session.url };
+  }
+);
+
+// Create a Stripe Billing Portal Session
+exports.createBillingPortalSession = onCall(
+  { region: REGION_AU, secrets: [STRIPE_SECRET_KEY] },
+  async (request) => {
+    const auth = request.auth;
+    if (!auth) return { error: 'unauthenticated' };
+
+    const stripe = stripeLib(STRIPE_SECRET_KEY.value());
+    const uid = auth.uid;
+    const customersRef = db.collection('stripe_customers').doc(uid);
+    const snap = await customersRef.get();
+    if (!snap.exists) return { error: 'no customer record' };
+
+    const { customerId } = snap.data();
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: request.data?.returnUrl || 'https://gallerynest.syntaxcorestudio.com/dashboard.html'
+    });
+    return { url: session.url };
+  }
+);
+
+// Stripe Webhook
+exports.stripeWebhook = onRequest(
+  { region: REGION_US, secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET] },
+  async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const stripe = stripeLib(STRIPE_SECRET_KEY.value());
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(req.rawBody, sig, STRIPE_WEBHOOK_SECRET.value());
+    } catch (err) {
+      console.error('Webhook signature error', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.created') {
+      const subscription = event.data.object;
+      const uid = subscription.metadata?.firebaseUID;
+      if (uid) {
+        const planId = subscription.items.data[0].price.id;
+        const plan =
+          planId === PRICE_PRO_MONTHLY.value()
+            ? 'pro'
+            : planId === PRICE_BUSINESS_MONTHLY.value()
+            ? 'business'
+            : 'free';
+
+        await db.collection('users').doc(uid).set(
+          { plan, storageLimit: limitForPlan(plan) },
+          { merge: true }
+        );
+      }
+    }
+
+    res.json({ received: true });
   }
 );

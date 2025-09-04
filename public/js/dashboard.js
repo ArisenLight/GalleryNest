@@ -152,7 +152,7 @@ async function startCheckout(planKey) {
     // Disable modal buttons briefly
     document.querySelectorAll(".plan-btn").forEach(b => b.disabled = true);
 
-    const createSession = httpsCallable(functionsAU, "createCheckoutSession");
+    const createSession = httpsCallable(functionsAU, "createCheckoutSessionV2");
     const { data } = await createSession({
       priceKey,
       successUrl: window.location.origin + "/dashboard.html?upgrade=success",

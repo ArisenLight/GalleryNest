@@ -190,26 +190,40 @@ exports.createCheckoutSession = onCall(
 );
 
 // Create a Stripe Billing Portal Session
+// add near other exports
 exports.createBillingPortalSession = onCall(
-  { region: REGION_AU, secrets: [STRIPE_SECRET_KEY] },
+  { region: REGION_AU, memory: '256MiB', timeoutSeconds: 60 },
   async (request) => {
     const auth = request.auth;
     if (!auth) return { error: 'unauthenticated' };
+    if (!stripe) return { error: 'Stripe not configured' };
 
-    const stripe = stripeLib(STRIPE_SECRET_KEY.value());
     const uid = auth.uid;
-    const customersRef = db.collection('stripe_customers').doc(uid);
-    const snap = await customersRef.get();
-    if (!snap.exists) return { error: 'no customer record' };
 
-    const { customerId } = snap.data();
-    const session = await stripe.billingPortal.sessions.create({
+    // get or create a Stripe customer for this Firebase user
+    const custRef = db.collection('stripe_customers').doc(uid);
+    const snap = await custRef.get();
+
+    let customerId = snap.exists && snap.data().customerId
+      ? snap.data().customerId
+      : (await stripe.customers.create({ metadata: { firebaseUID: uid } })).id;
+
+    if (!snap.exists || !snap.data().customerId) {
+      await custRef.set({ customerId }, { merge: true });
+    }
+
+    // Use the current page as returnUrl if provided
+    const returnUrl = request.data?.returnUrl || 'https://gallerynest.syntaxcorestudio.com/dashboard.html';
+
+    const portal = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: request.data?.returnUrl || 'https://gallerynest.syntaxcorestudio.com/dashboard.html'
+      return_url: returnUrl
     });
-    return { url: session.url };
+
+    return { url: portal.url };
   }
 );
+
 
 // Stripe Webhook
 exports.stripeWebhook = onRequest(

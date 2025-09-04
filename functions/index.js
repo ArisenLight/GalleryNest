@@ -139,6 +139,37 @@ exports.checkQuotaV2 = onCall(
   }
 );
 
+
+// Helper: ensure we always have a valid customer in the current Stripe mode
+async function getOrCreateValidCustomer(stripe, uid, db) {
+  const docRef = db.collection('stripe_customers').doc(uid);
+  const snap = await docRef.get();
+
+  let customerId = snap.exists && snap.data().customerId ? snap.data().customerId : null;
+
+  if (customerId) {
+    try {
+      await stripe.customers.retrieve(customerId); // throws if not found
+    } catch (e) {
+      if (e && (e.statusCode === 404 || e.code === 'resource_missing')) {
+        customerId = null; // remove old (test) customer id
+      } else {
+        throw e; // unexpected error
+      }
+    }
+  }
+
+  if (!customerId) {
+    const created = await stripe.customers.create({ metadata: { firebaseUID: uid } });
+    customerId = created.id;
+    await docRef.set({ customerId }, { merge: true });
+  }
+
+  return customerId;
+}
+
+
+
 // Create a Stripe Checkout Session
 exports.createCheckoutSession = onCall(
   {
@@ -148,46 +179,43 @@ exports.createCheckoutSession = onCall(
     secrets: [STRIPE_SECRET_KEY, PRICE_PRO_MONTHLY, PRICE_BUSINESS_MONTHLY]
   },
   async (request) => {
-    const auth = request.auth;
-    if (!auth) return { error: 'unauthenticated' };
+    try {
+      const auth = request.auth;
+      if (!auth) return { error: 'unauthenticated' };
 
-    const stripe = stripeLib(STRIPE_SECRET_KEY.value());
-    const planKey = request.data?.plan || 'pro';
+      const stripe = stripeLib(STRIPE_SECRET_KEY.value());
+      const planKey = request.data?.plan || 'pro';
 
-    const priceId =
-      planKey === 'pro'
-        ? PRICE_PRO_MONTHLY.value()
-        : planKey === 'business'
-        ? PRICE_BUSINESS_MONTHLY.value()
-        : null;
+      const priceId =
+        planKey === 'pro' ? PRICE_PRO_MONTHLY.value() :
+        planKey === 'business' ? PRICE_BUSINESS_MONTHLY.value() :
+        null;
 
-    if (!priceId) return { error: 'Unknown plan' };
+      if (!priceId) return { error: 'Unknown plan' };
 
-    const uid = auth.uid;
-    const customersRef = db.collection('stripe_customers').doc(uid);
-    const snap = await customersRef.get();
+      const uid = auth.uid;
+      const customerId = await getOrCreateValidCustomer(stripe, uid, db);
 
-    let customerId = snap.exists && snap.data().customerId
-      ? snap.data().customerId
-      : (await stripe.customers.create({ metadata: { firebaseUID: uid } })).id;
+      const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        customer: customerId,
+        line_items: [{ price: priceId, quantity: 1 }],
+        subscription_data: { trial_period_days: 14 },
+        success_url: 'https://gallerynest.syntaxcorestudio.com/dashboard.html?checkout=success',
+        cancel_url: 'https://gallerynest.syntaxcorestudio.com/dashboard.html?checkout=cancel',
+        allow_promotion_codes: true
+      });
 
-    if (!snap.exists || !snap.data().customerId) {
-      await customersRef.set({ customerId }, { merge: true });
+      return { id: session.id, url: session.url };
+    } catch (err) {
+      console.error("createCheckoutSession error:", {
+        type: err.type, code: err.code, statusCode: err.statusCode, message: err.message
+      });
+      return { error: err.message || "Checkout failed" };
     }
-
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: { trial_period_days: 14 },
-      success_url: 'https://gallerynest.syntaxcorestudio.com/dashboard.html?checkout=success',
-      cancel_url: 'https://gallerynest.syntaxcorestudio.com/dashboard.html?checkout=cancel',
-      allow_promotion_codes: true
-    });
-
-    return { id: session.id, url: session.url };
   }
 );
+
 
 // Optional alias so old client names still work
 exports.createCheckoutSessionV2 = exports.createCheckoutSession;
@@ -200,37 +228,34 @@ exports.createBillingPortalSession = onCall(
     region: REGION_AU,
     memory: '256MiB',
     timeoutSeconds: 60,
-    secrets: [STRIPE_SECRET_KEY],     // <— IMPORTANT
+    secrets: [STRIPE_SECRET_KEY]
   },
   async (request) => {
-    const auth = request.auth;
-    if (!auth) return { error: 'unauthenticated' };
+    try {
+      const auth = request.auth;
+      if (!auth) return { error: 'unauthenticated' };
 
-    const stripe = stripeLib(STRIPE_SECRET_KEY.value());  // <— initialize Stripe
-    const uid = auth.uid;
+      const stripe = stripeLib(STRIPE_SECRET_KEY.value());
+      const uid = auth.uid;
 
-    // get or create a Stripe customer for this Firebase user
-    const custRef = db.collection('stripe_customers').doc(uid);
-    const snap = await custRef.get();
+      const customerId = await getOrCreateValidCustomer(stripe, uid, db);
 
-    let customerId = snap.exists && snap.data().customerId
-      ? snap.data().customerId
-      : (await stripe.customers.create({ metadata: { firebaseUID: uid } })).id;
+      const returnUrl = request.data?.returnUrl || 'https://gallerynest.syntaxcorestudio.com/dashboard.html';
+      const portal = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl
+      });
 
-    if (!snap.exists || !snap.data().customerId) {
-      await custRef.set({ customerId }, { merge: true });
+      return { url: portal.url };
+    } catch (err) {
+      console.error("createBillingPortalSession error:", {
+        type: err.type, code: err.code, statusCode: err.statusCode, message: err.message
+      });
+      return { error: err.message || "Portal failed" };
     }
-
-    const returnUrl = request.data?.returnUrl || 'https://gallerynest.syntaxcorestudio.com/dashboard.html';
-
-    const portal = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: returnUrl
-    });
-
-    return { url: portal.url };
   }
 );
+
 
 
 

@@ -96,11 +96,6 @@ const currentPlanEl = document.getElementById("currentPlan");
 const manageBillingBtn = document.getElementById("manageBillingBtn");
 const closePlanModal = document.getElementById("closePlanModal");
 
-// Map your UI plan keys to Stripe price IDs (we will set real IDs in Functions config)
-const PLAN_PRICE_KEY = {
-  pro: "price_pro_monthly",         // placeholder key
-  business: "price_business_monthly"// placeholder key
-};
 
 function showPlanModal(planName) {
   if (currentPlanEl) currentPlanEl.textContent = planName || "Unknown";

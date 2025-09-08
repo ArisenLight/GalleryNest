@@ -147,13 +147,18 @@ async function startCheckout(planKey) {
 
     // call the canonical name (alias exists too)
     const createSession = httpsCallable(functionsAU, "createCheckoutSession");
-    const { data } = await createSession({ plan: planKey });
+const { data } = await createSession({ plan: planKey });
+console.log("createCheckoutSession response:", data);
 
-    if (data?.url) {
-      window.location.assign(data.url);
-    } else {
-      throw new Error("No checkout url");
-    }
+if (data?.error) {
+  throw new Error(data.error);
+}
+if (data?.url) {
+  window.location.assign(data.url);
+  return;
+}
+throw new Error("No checkout url from server");
+
   } catch (err) {
     console.error("Checkout error", err);
     alert("Could not start checkout. Try again.");

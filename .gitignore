@@ -67,3 +67,8 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+stripe_key.txt
+stripe-key.txt
+.stripe_key.txt
+price-pro.txt
+price-business.txt

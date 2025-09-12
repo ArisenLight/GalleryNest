@@ -26,7 +26,7 @@ const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
 // Plan limits
 const MB = 1024 * 1024;
 const GB = 1024 * MB;
-const PLAN_LIMITS = { free: 100 * GB, pro: 10 * GB, business: 50 * GB };
+const PLAN_LIMITS = { free: 100 * MB, pro: 10 * GB, business: 50 * GB };
 const limitForPlan = (plan) => PLAN_LIMITS[plan] || PLAN_LIMITS.free;
 
 // IMPORTANT: bucket name, not domain. Check in Firebase Console Storage header.

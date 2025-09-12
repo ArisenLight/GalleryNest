@@ -71,7 +71,7 @@ function planFromLimit(limitBytes) {
   const limitGB = limitBytes / (1024 * 1024 * 1024);
 
   // Free: 100 MB
-  if (limitMB <= 120) {
+  if (limitGB <= 120) {
     return { name: "Free", cls: "free" };
   }
 

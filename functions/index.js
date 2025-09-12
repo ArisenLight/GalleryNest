@@ -203,7 +203,8 @@ exports.createCheckoutSession = onCall(
         subscription_data: { trial_period_days: 14 },
         success_url: 'https://gallerynest.syntaxcorestudio.com/dashboard.html?checkout=success',
         cancel_url: 'https://gallerynest.syntaxcorestudio.com/dashboard.html?checkout=cancel',
-        allow_promotion_codes: true
+        allow_promotion_codes: true,
+        metadata: { firebaseUID: uid }
       });
 
       return { id: session.id, url: session.url };
@@ -274,27 +275,73 @@ exports.stripeWebhook = onRequest(
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    if (event.type === 'customer.subscription.created' || event.type === 'customer.subscription.updated') {
-  const subscription = event.data.object;
-  const customerId = subscription.customer;
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed': {
+          const session = event.data.object;
+          if (session.mode !== 'subscription') break;
 
-  // Find uid by reverse lookup
-  const match = await db.collection('stripe_customers').where('customerId', '==', customerId).limit(1).get();
-  if (!match.empty) {
-    const uid = match.docs[0].id;
-    const planId = subscription.items.data[0].price.id;
-    const plan =
-      planId === PRICE_PRO_MONTHLY.value() ? 'pro' :
-      planId === PRICE_BUSINESS_MONTHLY.value() ? 'business' : 'free';
+          // get subscription to find the priceId
+          const sub = await stripe.subscriptions.retrieve(session.subscription);
+          const planId = sub.items.data[0].price.id;
+          const plan =
+            planId === PRICE_PRO_MONTHLY.value() ? 'pro' :
+            planId === PRICE_BUSINESS_MONTHLY.value() ? 'business' : 'free';
 
-    await db.collection('users').doc(uid).set(
-      { plan, storageLimit: limitForPlan(plan) },
-      { merge: true }
-    );
-  }
-}
+          // look up uid
+          const customerId = session.customer;
+          const match = await db.collection('stripe_customers').where('customerId', '==', customerId).limit(1).get();
+          if (!match.empty) {
+            const uid = match.docs[0].id;
+            await db.collection('users').doc(uid).set(
+              { plan, storageLimit: limitForPlan(plan) },
+              { merge: true }
+            );
+          }
+          break;
+        }
 
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated':
+        case 'customer.subscription.deleted': {
+          const sub = event.data.object;
+          const planId = sub.items.data[0].price.id;
+          const plan =
+            planId === PRICE_PRO_MONTHLY.value() ? 'pro' :
+            planId === PRICE_BUSINESS_MONTHLY.value() ? 'business' : 'free';
 
-    res.json({ received: true });
+          const customerId = sub.customer;
+          const match = await db.collection('stripe_customers').where('customerId', '==', customerId).limit(1).get();
+          if (!match.empty) {
+            const uid = match.docs[0].id;
+            const docRef = db.collection('users').doc(uid);
+
+            // downgrade if canceled/inactive
+            const status = sub.status;
+            if (event.type === 'customer.subscription.deleted' || status !== 'active') {
+              await docRef.set(
+                { plan: 'free', storageLimit: limitForPlan('free') },
+                { merge: true }
+              );
+            } else {
+              await docRef.set(
+                { plan, storageLimit: limitForPlan(plan) },
+                { merge: true }
+              );
+            }
+          }
+          break;
+        }
+
+        default:
+          console.log(`Unhandled event: ${event.type}`);
+      }
+
+      res.json({ received: true });
+    } catch (err) {
+      console.error('Webhook error', err);
+      res.status(500).send('Webhook handler error');
+    }
   }
 );
+
